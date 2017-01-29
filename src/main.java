@@ -34,9 +34,9 @@ public class main {
     public static void main(String[] args) throws NoSuchAlgorithmException, UnsupportedEncodingException, NoSuchPaddingException {
         String mode = args[0];
         Crypto crypto = new Crypto();
-        crypto.makeKey();
+        byte[] aes_key = crypto.make_key();
         if(mode.equals("0")){
-            encrypt(Arrays.copyOfRange(args, 1, args.length),crypto);
+            encrypt(Arrays.copyOfRange(args, 1, args.length),crypto, aes_key);
         } else if (mode.equals("1")){
             decrypt(Arrays.copyOfRange(args,1,args.length),crypto);
         } else {
@@ -48,7 +48,7 @@ public class main {
 
 
 
-    private static void encrypt(String[] args, Crypto crypto){
+    private static void encrypt(String[] args, Crypto crypto, byte[] aes_key){
         String file_to_encrypt = args[0],
                 config_file = args[1],
                 key_store_path = args[2],
@@ -63,7 +63,7 @@ public class main {
             PublicKey public_key = crypto.get_public_key(key_store_path, key_store_password.toCharArray(), alias);
             PrivateKey my_private_key = crypto.get_private_key(key_store_path, key_store_password.toCharArray(), my_alias, my_password.toCharArray());
 
-            crypto.encrypt_file(file_to_encrypt, config_file, message_to_encrypt, public_key, my_private_key, signature_file);
+            crypto.encrypt_file(file_to_encrypt, config_file, message_to_encrypt, public_key, my_private_key, signature_file, aes_key);
 
 
         } catch (Exception e) {
@@ -84,7 +84,7 @@ public class main {
         try {
             PrivateKey private_key = crypto.get_private_key(key_store_path, key_store_password.toCharArray(), alias, alias_password.toCharArray());
             PublicKey his_public_key = crypto.get_public_key(key_store_path, key_store_password.toCharArray(), other_alias);
-            byte[] decrypted_file = crypto.decryp_file(file_to_decrypt, config_file, private_key);
+            byte[] decrypted_file = crypto.decrypt_file(file_to_decrypt, config_file, private_key);
             boolean verify = crypto.verify_signature(signature_file_location,decrypted_file,his_public_key);
             String outputString = verify ? "File is verified." : "File isn't verified, signature isn't correct";
             System.out.println(outputString);
