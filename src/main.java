@@ -1,10 +1,6 @@
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.security.*;
-import java.security.cert.*;
-import java.security.cert.Certificate;
 import java.util.Arrays;
 
 public class main {
@@ -67,7 +63,7 @@ public class main {
             PublicKey public_key = crypto.get_public_key(key_store_path, key_store_password.toCharArray(), alias);
             PrivateKey my_private_key = crypto.get_private_key(key_store_path, key_store_password.toCharArray(), my_alias, my_password.toCharArray());
 
-            crypto.encryptFile(file_to_encrypt, config_file, message_to_encrypt, public_key, my_private_key, signature_file);
+            crypto.encrypt_file(file_to_encrypt, config_file, message_to_encrypt, public_key, my_private_key, signature_file);
 
 
         } catch (Exception e) {
@@ -88,7 +84,7 @@ public class main {
         try {
             PrivateKey private_key = crypto.get_private_key(key_store_path, key_store_password.toCharArray(), alias, alias_password.toCharArray());
             PublicKey his_public_key = crypto.get_public_key(key_store_path, key_store_password.toCharArray(), other_alias);
-            byte[] decrypted_file = crypto.decryptFile(file_to_decrypt, config_file, private_key);
+            byte[] decrypted_file = crypto.decryp_file(file_to_decrypt, config_file, private_key);
             boolean verify = crypto.verify_signature(signature_file_location,decrypted_file,his_public_key);
             String outputString = verify ? "File is verified." : "File isn't verified, signature isn't correct";
             System.out.println(outputString);

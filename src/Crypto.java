@@ -14,21 +14,24 @@ public class Crypto {
     private byte[] aesKey;
     private SecretKeySpec aesKeySpec;
 
+    private final String algorithm_used_for_aes_key_encryption = "RSA";
+
     public Crypto() throws NoSuchAlgorithmException, NoSuchPaddingException, UnsupportedEncodingException {
         cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         ivParameterSpec = new IvParameterSpec("AAAAAAAAAAAAAAAA".getBytes("UTF-8"));
     }
 
-    private byte[] decrypt(String algorithm, byte[] encryptedMessage, Key keySpec) throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException, IllegalBlockSizeException, UnsupportedEncodingException {
-        if(algorithm.equals("RSA")){
-            decipher = Cipher.getInstance("RSA");
+    private byte[] decrypt(String algorithm, byte[] encrypted_message, Key keySpec) throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException, IllegalBlockSizeException, UnsupportedEncodingException {
+
+        if(algorithm.equals(algorithm_used_for_aes_key_encryption)){
+            decipher = Cipher.getInstance(algorithm_used_for_aes_key_encryption);
             decipher.init(Cipher.DECRYPT_MODE, keySpec);
         } else {
             decipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             decipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
         }
 
-        return decipher.doFinal(encryptedMessage);
+        return decipher.doFinal(encrypted_message);
 
     }
 
@@ -77,20 +80,20 @@ public class Crypto {
     }
 
     public byte[] decrypt_key_rsa(String configFile, PrivateKey keySpec) throws IOException, NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-        byte[] encrypted_aes_key = readKeyFromFile(configFile);
+        byte[] encrypted_aes_key = read_key_from_file(configFile);
         byte[] decrypted_aes_key = decrypt("RSA", encrypted_aes_key, keySpec);
         return decrypted_aes_key;
 
     }
 
-    byte[] decryptFile(String fileLocation, String configFile, PrivateKey private_key) throws IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+    byte[] decryp_file(String fileLocation, String configFile, PrivateKey private_key) throws IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         byte[] aes_key = decrypt_key_rsa(configFile, private_key);
-        byte[] decrypted_file = readFile(fileLocation, aes_key);
+        byte[] decrypted_file = read_file(fileLocation, aes_key);
         return decrypted_file;
 
     }
 
-    void encryptFile(String file, String configFile, byte[] encMessage, PublicKey publicKey, PrivateKey my_private_key, String signature_file) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException, SignatureException {
+    void encrypt_file(String file, String config_file, byte[] encrypted_message, PublicKey publicKey, PrivateKey my_private_key, String signature_file) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException, SignatureException {
         byte[] hash = sign_file(file, my_private_key);
         byte[] key_encrypted;
         FileOutputStream fos;
@@ -99,16 +102,16 @@ public class Crypto {
         sign_fos.write(hash);
         sign_fos.close();
 
-        writeFile(file,encMessage);
+        write_file(file,encrypted_message);
 
         key_encrypted = encrypt_key_rsa(aesKey, publicKey);
 
-        fos = new FileOutputStream(configFile);
+        fos = new FileOutputStream(config_file);
         fos.write(key_encrypted);
         fos.close();
     }
 
-    byte[] readFile(String fileLocation, byte[] key) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    byte[] read_file(String fileLocation, byte[] key) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
 
         Key aes = new SecretKeySpec(key, "AES");
         File file = new File(fileLocation);
@@ -128,7 +131,7 @@ public class Crypto {
     }
 
 
-     void writeFile(String file, byte[] encMessage) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException {
+     void write_file(String file, byte[] encMessage) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException {
 
             cipher.init(Cipher.ENCRYPT_MODE, aesKeySpec, ivParameterSpec);
             CipherOutputStream cip = new CipherOutputStream(new FileOutputStream(file), cipher);
@@ -138,7 +141,7 @@ public class Crypto {
 
     }
 
-    byte[] readHashFromFile(String fileLocation) throws IOException {
+    byte[] read_hash_from_file(String fileLocation) throws IOException {
         FileInputStream fis = new FileInputStream(fileLocation);
         byte[] hash = new byte[fis.available()];
         fis.read(hash);
@@ -146,7 +149,7 @@ public class Crypto {
         return hash;
     }
 
-     byte[] readKeyFromFile(String fileLocation) throws IOException {
+     byte[] read_key_from_file(String fileLocation) throws IOException {
 
             FileInputStream fis = new FileInputStream(fileLocation);
             byte[] key = new byte[fis.available()];
@@ -158,7 +161,7 @@ public class Crypto {
     }
 
     public boolean verify_signature(String signature_file_location, byte[] decrypted_message, PublicKey public_key) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        byte[] encrypted_hash = readHashFromFile(signature_file_location);
+        byte[] encrypted_hash = read_hash_from_file(signature_file_location);
         byte[] message_hash = digest(new ByteArrayInputStream(decrypted_message));
         Signature signature = Signature.getInstance("SHA256withRSA");
         signature.initVerify(public_key);
